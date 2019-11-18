@@ -15,46 +15,80 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const IntervalSecond = 60
+/*
+Number of seconds between sending metrics to Stackdriver
+*/
+const SendIntervalSecond = 60
+
+/*
+The number of seconds between collecting GPU metrics.
+Send the average value to Stackdriver at SendIntervalSecond.
+*/
+const CollectIntervalSecond = 10
 
 func gpuUtilizationTicker(ctx context.Context, client *gpuStackdriverClient, devices []*nvml.Device) error {
-	ticker := time.NewTicker(time.Second * IntervalSecond)
-	defer ticker.Stop()
+	sendTicker := time.NewTicker(time.Second * SendIntervalSecond)
+	collectTicker := time.NewTicker(time.Second * CollectIntervalSecond)
+	defer sendTicker.Stop()
+	defer collectTicker.Stop()
 
+	metric := float64(0)
+	count := 0
 	for {
 		select {
-		case <-ticker.C:
+		case <-sendTicker.C:
+			log.Println("Send GPU utilization")
+			sentMetric := metric / float64(count)
+			log.Println(sentMetric)
+			if err := client.reportGpuMetric("gpu_utilization", float64(sentMetric)); err != nil {
+				return err
+			}
+			metric = 0
+			count = 0
+		case <-collectTicker.C:
+			log.Println("Collect GPU utilization")
 			for i, device := range devices {
 				st, err := device.Status()
 				if err != nil {
-					return fmt.Errorf("Error getting device %d status: %v\n", i, err)
+					return fmt.Errorf("error getting device %d status: %v\n", i, err)
 				}
-				if err := client.reportGpuMetric("gpu_utilization", float64(*st.Utilization.GPU)); err != nil {
-					return err
-				}
+				metric += float64(*st.Utilization.GPU)
+				count += 1
 			}
+			log.Println(metric)
+			log.Println(count)
 		case <-ctx.Done():
-			log.Println("Stop GPU utilization ticker")
+			log.Println("Stop GPU utilization")
 			return ctx.Err()
 		}
 	}
 }
 
 func gpuMemoryUtilizationTicker(ctx context.Context, client *gpuStackdriverClient, devices []*nvml.Device) error {
-	ticker := time.NewTicker(time.Second * IntervalSecond)
-	defer ticker.Stop()
+	sendTicker := time.NewTicker(time.Second * SendIntervalSecond)
+	collectTicker := time.NewTicker(time.Second * CollectIntervalSecond)
+	defer sendTicker.Stop()
+	defer collectTicker.Stop()
 
+	metric := float64(0)
+	count := 0
 	for {
 		select {
-		case <-ticker.C:
+		case <-sendTicker.C:
+			sentMetric := metric / float64(count)
+			if err := client.reportGpuMetric("gpu_memory_utilization", float64(sentMetric)); err != nil {
+				return err
+			}
+			metric = 0
+			count = 0
+		case <-collectTicker.C:
 			for i, device := range devices {
 				st, err := device.Status()
 				if err != nil {
-					return fmt.Errorf("Error getting device %d status: %v\n", i, err)
+					return fmt.Errorf("error getting device %d status: %v\n", i, err)
 				}
-				if err := client.reportGpuMetric("gpu_memory_utilization", float64(*st.Utilization.Memory)); err != nil {
-					return err
-				}
+				metric += float64(*st.Utilization.Memory)
+				count += 1
 			}
 		case <-ctx.Done():
 			log.Println("Stop GPU memory utilization ticker")
@@ -64,20 +98,28 @@ func gpuMemoryUtilizationTicker(ctx context.Context, client *gpuStackdriverClien
 }
 
 func gpuTemperatureTicker(ctx context.Context, client *gpuStackdriverClient, devices []*nvml.Device) error {
-	ticker := time.NewTicker(time.Second * IntervalSecond)
-	defer ticker.Stop()
+	sendTicker := time.NewTicker(time.Second * SendIntervalSecond)
+	collectTicker := time.NewTicker(time.Second * CollectIntervalSecond)
+	defer sendTicker.Stop()
+	defer collectTicker.Stop()
 
+	metric := float64(0)
+	count := 0
 	for {
 		select {
-		case <-ticker.C:
+		case <-sendTicker.C:
+			sentMetric := metric / float64(count)
+			if err := client.reportGpuMetric("gpu_temperature", float64(sentMetric)); err != nil {
+				return err
+			}
+		case <-collectTicker.C:
 			for i, device := range devices {
 				st, err := device.Status()
 				if err != nil {
-					return fmt.Errorf("Error getting device %d status: %v\n", i, err)
+					return fmt.Errorf("error getting device %d status: %v\n", i, err)
 				}
-				if err := client.reportGpuMetric("gpu_temperature", float64(*st.Temperature)); err != nil {
-					return err
-				}
+				metric += float64(*st.Temperature)
+				count += 1
 			}
 		case <-ctx.Done():
 			log.Println("Stop GPU temperature ticker")
