@@ -156,7 +156,9 @@ func signalContext(ctx context.Context) context.Context {
 }
 
 func Run() error {
-	nvml.Init()
+	if err := nvml.Init(); err != nil {
+		return err
+	}
 	defer nvml.Shutdown()
 
 	count, err := nvml.GetDeviceCount()
