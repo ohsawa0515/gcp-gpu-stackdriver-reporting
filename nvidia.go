@@ -24,7 +24,7 @@ const SendIntervalSecond = 60
 The number of seconds between collecting GPU metrics.
 Send the average value to Stackdriver at SendIntervalSecond.
 */
-const CollectIntervalSecond = 10
+const CollectIntervalSecond = 5
 
 func gpuUtilizationTicker(ctx context.Context, client *gpuStackdriverClient, devices []*nvml.Device) error {
 	sendTicker := time.NewTicker(time.Second * SendIntervalSecond)
