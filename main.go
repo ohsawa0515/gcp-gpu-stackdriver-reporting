@@ -1,9 +1,11 @@
 package main
 
-import "log"
+import (
+	"log"
+)
 
 func main() {
-	if err := nvidia(); err != nil {
+	if err := Run(); err != nil {
 		log.Fatal(err)
 	}
 }
