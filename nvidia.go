@@ -4,13 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
+	"golang.org/x/sync/errgroup"
 )
 
 func nvidia() error {
@@ -39,32 +36,20 @@ func nvidia() error {
 		return err
 	}
 
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	parent := signalContext(ctx)
+	eg, child := errgroup.WithContext(parent)
 
-	ticker := time.NewTicker(time.Second * 60)
-	defer ticker.Stop()
+	eg.Go(func() error {
+		return gpuUtilizationTicker(child, client, devices)
+	})
 
-	for {
-		select {
-		case <-ticker.C:
-			for i, device := range devices {
-				st, err := device.Status()
-				if err != nil {
-					return fmt.Errorf("Error getting device %d status: %v\n", i, err)
-				}
-				if err := client.reportGpuMetric("gpu_utilization", float64(*st.Utilization.GPU)); err != nil {
-					return err
-				}
-				if err := client.reportGpuMetric("gpu_memory_utilization", float64(*st.Utilization.Memory)); err != nil {
-					return err
-				}
-				if err := client.reportGpuMetric("gpu_temperature", float64(*st.Temperature)); err != nil {
-					return err
-				}
-			}
-		case <-sigs:
-			return nil
-		}
-	}
+	eg.Go(func() error {
+		return gpuMemoryUtilizationTicker(child, client, devices)
+	})
+
+	eg.Go(func() error {
+		return gpuTemperatureTicker(child, client, devices)
+	})
+
+	return eg.Wait()
 }
