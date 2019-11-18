@@ -37,16 +37,13 @@ func gpuUtilizationTicker(ctx context.Context, client *gpuStackdriverClient, dev
 	for {
 		select {
 		case <-sendTicker.C:
-			log.Println("Send GPU utilization")
 			sentMetric := metric / float64(count)
-			log.Println(sentMetric)
 			if err := client.reportGpuMetric("gpu_utilization", float64(sentMetric)); err != nil {
 				return err
 			}
 			metric = 0
 			count = 0
 		case <-collectTicker.C:
-			log.Println("Collect GPU utilization")
 			for i, device := range devices {
 				st, err := device.Status()
 				if err != nil {
@@ -55,8 +52,6 @@ func gpuUtilizationTicker(ctx context.Context, client *gpuStackdriverClient, dev
 				metric += float64(*st.Utilization.GPU)
 				count += 1
 			}
-			log.Println(metric)
-			log.Println(count)
 		case <-ctx.Done():
 			log.Println("Stop GPU utilization")
 			return ctx.Err()
