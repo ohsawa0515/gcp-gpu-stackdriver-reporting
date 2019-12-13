@@ -158,14 +158,14 @@ func Run() error {
 
 	count, err := nvml.GetDeviceCount()
 	if err != nil {
-		return fmt.Errorf("error getting device count: %v", err)
+		return fmt.Errorf("error getting device count: %v\n", err)
 	}
 
 	var devices []*nvml.Device
 	for i := uint(0); i < count; i++ {
 		device, err := nvml.NewDevice(i)
 		if err != nil {
-			return fmt.Errorf("Error getting device %d: %v\n", i, err)
+			return fmt.Errorf("error getting device %d: %v\n", i, err)
 		}
 		devices = append(devices, device)
 	}
