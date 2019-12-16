@@ -6,9 +6,9 @@ This tools is able to supports Linux only.
 - Ubuntu 16.04/18.04
 
 
-# Installation
+## Installation
 
-## Download binary
+### Download binary
 
 Download it from [releases page](https://github.com/ohsawa0515/gcp-gpu-stackdriver-reporting/releases) and extract it to `/usr/local/bin`.
 
@@ -19,7 +19,7 @@ $ mv ./gcp-gpu-stackdriver-reporting /usr/local/bin/
 $ chmod +x /usr/local/bin/gcp-gpu-stackdriver-reporting
 ```
 
-## go get
+### go get
 
 ```console
 $ go get github.com/ohsawa0515/gcp-gpu-stackdriver-reporting
@@ -27,7 +27,7 @@ $ mv $GOPATH/gcp-gpu-stackdriver-reporting /usr/local/bin/
 $ chmod +x /usr/local/bin/gcp-gpu-stackdriver-reporting
 ```
 
-# Run as systemd
+## Run as systemd
 
 ```console
 $ cat <<-EOH > /lib/systemd/system/gcp-gpu-stackdriver-reporting.service
@@ -49,11 +49,29 @@ $ systemctl enable gcp-gpu-stackdriver-reporting.service
 $ systemctl start gcp-gpu-stackdriver-reporting.service
 ```
 
-# Run as docker
+## Run as docker container
 
 NVIDIA driver is required. Please install from [here](https://github.com/NVIDIA/nvidia-docker#quickstart).
 
 ```console
 $ docker pull ohsawa0515/gcp-gpu-stackdriver-reporting:latest
 $ docker run -d --runtime=nvidia --rm ohsawa0515/gcp-gpu-stackdriver-reporting:latest
+```
+
+## Run as Google Kubernetes Engine(GKE)
+
+### Create GKE cluster and node pools with GPU
+
+See [document](https://cloud.google.com/kubernetes-engine/docs/how-to/gpus?hl=en#gpu_pool).
+
+### Installing NVIDIA GPU device drivers.
+
+```console
+$ kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/container-engine-accelerators/master/nvidia-driver-installer/cos/daemonset-preloaded.yaml
+```
+
+### gcp-gpu-stackdriver-reporting apply into GKE as daemonset
+
+```console
+$ kubectl apply -f daemonset-sample.yaml
 ```
