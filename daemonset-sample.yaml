@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: gcp-gpu-stackdriver-reporting
+spec:
+  selector:
+    matchLabels:
+      name: gcp-gpu-stackdriver-reporting
+  template:
+    metadata:
+      labels:
+        name: gcp-gpu-stackdriver-reporting
+    spec:
+      containers:
+        - name: gcp-gpu-stackdriver-reporting
+          image: ohsawa0515/gcp-gpu-stackdriver-reporting:latest
+          resources:
+            limits:
+              nvidia.com/gpu: 1
